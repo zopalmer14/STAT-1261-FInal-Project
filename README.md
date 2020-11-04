@@ -1,1 +1,1 @@
-# STAT-1261-FInal-Project
+# STAT-1261-Final-Project
