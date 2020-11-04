@@ -1,0 +1,41 @@
+---
+title: "Final Project Part 2"
+author: "Zach Palmer"
+date: "10/26/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r, warning=FALSE, include=FALSE}
+library(atus)
+library(tidyquant)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+time_data = ungroup(atusact)
+time_data %>% 
+  group_by(tucaseid) %>% 
+  group_by(tiercode, add = TRUE) %>%
+  summarise(tier1_2Code = tiercode %/% 100,
+            tier1 = tiercode %/% 10000,
+            tier2 = (tiercode %% 10000) %/% 100, 
+            tier3 = (tiercode %% 10000) %% 100,
+            hours = dur %/% 60,
+            minutes = dur %% 60)
+```
+
+```{r}
+atuscps
+```
+
+```{r}
+atusresp
+```
+

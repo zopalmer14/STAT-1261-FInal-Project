@@ -1,0 +1,140 @@
+---
+title: 'STAT 1261/2260: Principles of Data Science'
+subtitle: 'Final Project'
+author: "Zach Palmer"
+date: "10/21/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.width=7, fig.height=15, out.width = "70%", fig.align = "center",cache=T) 
+```
+
+# Setup and Data Wrangling/Visualization
+
+```{r echo = T, message = FALSE, warning = FALSE}
+library(fivethirtyeight)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(forcats)
+```
+
+```{r}
+fatal_collision_data = bad_drivers %>% 
+  group_by(state) %>% 
+  summarise(total = num_drivers,
+            speeding = total * (perc_speeding/100),
+            alcohol = total * (perc_alcohol/100),
+            not_distracted = total * (perc_not_distracted/100),
+            no_previous = total * (perc_no_previous/100),
+            speeding_diff = total - speeding,
+            alcohol_diff = total - alcohol,
+            not_distracted_diff = total - not_distracted,
+            no_previous_diff = total - no_previous
+  ) %>% 
+  gather("type", "amount", 2:10)
+
+head(fatal_collision_data, 5)
+```
+
+```{r}
+nd_data = fatal_collision_data %>% 
+  filter(type == "not_distracted" | type == "not_distracted_diff") 
+group.colors <- c(not_distracted_diff = "#FEE589", not_distracted = "#F5B700")
+
+ggplot(data = nd_data) + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  ggtitle("Drivers Involved In Fatal Collisions Who Were Not\nDistracted", subtitle = "As a share of the number of fatal collisions per billion miles, 2012") + 
+  geom_col(mapping = aes(x = fct_rev(state), y = amount, fill = fct_rev(type)), 
+           width = .7) + 
+  scale_fill_manual(name="",
+                    labels = c("TOTAL COLLISIONS PER BILLION MILES", "NON-DISTRACTED COLLISIONS PER BILLION MILES"), values = group.colors) + 
+  theme(legend.position = "top", legend.direction = "vertical") +
+  scale_y_continuous(limits = c(0, 26), expand = c(0, 0)) +
+  coord_flip()
+
+```
+
+```{r}
+pa_data = fatal_collision_data %>% 
+  filter(type == "no_previous" | type == "no_previous_diff") 
+group.colors <- c(no_previous_diff = "#8FBC8F", no_previous = "#228B22")
+
+ggplot(data = pa_data) + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  ggtitle("Drivers Involved In Fatal Collisions Who Had Not\nBeen Involved In Any Previous Accidents", subtitle = "As a share of the number of fatal collisions per billion miles, 2012") + 
+  geom_col(mapping = aes(x = fct_rev(state), y = amount, fill = fct_rev(type)), 
+           width = .7) + 
+  scale_fill_manual(name="",
+                    labels = c("TOTAL COLLISIONS PER BILLION MILES", "COLLISIONS PER BILLION MILES OF DRIVERS W/O PREVIOUS ACCIDENTS"), values = group.colors) + 
+  theme(legend.position = "top", legend.direction = "vertical") +
+  scale_y_continuous(limits = c(0, 26), expand = c(0, 0)) +
+  coord_flip()
+```
+
+```{r}
+s_data = fatal_collision_data %>% 
+  filter(type == "speeding" | type == "speeding_diff") 
+group.colors <- c(speeding_diff = "#F08080", speeding = "#FF0000")
+
+ggplot(data = s_data) + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  ggtitle("Drivers Involved In Fatal Collisions While Speeding", subtitle = "As a share of the number of fatal collisions per billion miles, 2012") + 
+  geom_col(mapping = aes(x = fct_rev(state), y = amount, fill = fct_rev(type)), 
+           width = .7) + 
+  scale_fill_manual(name="",
+                    labels = c("TOTAL COLLISIONS PER BILLION MILES", "SPEEDING COLLISIONS PER BILLION MILES"), values = group.colors) + 
+  theme(legend.position = "top", legend.direction = "vertical") +
+  scale_y_continuous(limits = c(0, 26), expand = c(0, 0)) +
+  coord_flip()
+```
+
+```{r}
+a_data = fatal_collision_data %>% 
+  filter(type == "alcohol" | type == "alcohol_diff") 
+group.colors <- c(alcohol_diff = "#87CEFA", alcohol = "#1E90FF")
+
+ggplot(data = a_data) + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  ggtitle("Drivers Involved In Fatal Collisions While Alcohol-\nImpaired", subtitle = "As a share of the number of fatal collisions per billion miles, 2012") + 
+  geom_col(mapping = aes(x = fct_rev(state), y = amount, fill = fct_rev(type)), 
+           width = .7) + 
+  scale_fill_manual(name="",
+                    labels = c("TOTAL COLLISIONS PER BILLION MILES", "ALCOHOL-RELATED COLLISIONS PER BILLION MILES"), values = group.colors) + 
+  theme(legend.position = "top", legend.direction = "vertical") +
+  scale_y_continuous(limits = c(0, 26), expand = c(0, 0)) +
+  coord_flip()
+
+```
+
+# 1. Technical Discussion 
+
+### Data Manipulation
+
+After reading in the data, I first grouped it by state in order to ensure each observation remained tied to its state regardless of the operations I performed on it. I could have accomplished this in other ways, but I felt this was the simplest and most natural way of going about it.  
+  
+Next, I used summarise on the data in order to generate the variables I needed to eventually build the graphics. In the original data set, the values for the various circumstances (e.g. speeding) were held as percentage values. What I needed was for these values to represent the exact amount of fatal collisions per billion miles. I accomplished this by dividing the percentage values by 100 and then multiplying this value by the total amount of vatal collisions. Furthermore, in the graphic the difference between the total and the partial value is stacked on top of the partial value. Thus, I needed to generate new variables for each circumstance which held the difference between their amount of collisions and the total. 
+  
+Another piece of manipulation I had to perform was was a gather operation. In order to use the type of circumstance as a color with which we may differentiate between the stacked bars, I had to take the column names that represented each type of circumstance and use them as values in a new variable type that indicated what circumstance each observation corresponded with.  
+  
+Finally, I had to perform one more operation for each graphic. As each deals with only one kind of circumstance, I simply had to filter out those observations that were not relevant to it.
+
+### Generating Graphic
+
+The code involving generating the graphics is relatively self-explanatory. I used various pieces of code to manipulate the aesthetics and features of the graphics. For instance, there is code to determine the colors and width for the bars, the ordering of the variable values, the positioning of the legend, the scales of the axis, etc. I essentially just fiddled with things until I could get it to look as close as possible to the original.
+
+# 2. Context of Data Graphic
+
+I recreated four out of the six data graphics included in the original article. I omitted the two graphics that examine the average combined insurance premium and the losses incurred by insurance company per collision respectively for each state. Each of the four graphics I recreated offers a comparison between the total amount of fatal collisions per billion miles and those fatal collisions where a certain factor was present. Each graphic offers data for each state. The four factors are: the driver not being distracted, the driver having no prior accidents, the driver was speeding, and the driver being impaired by alcohol. 
+
+# 3. References
+
+Article Title: Dear Mona, Which State Has The Worst Drivers?  
+Author: Mona Chalabi  
+URL: https://fivethirtyeight.com/features/which-state-has-the-worst-drivers/
+
