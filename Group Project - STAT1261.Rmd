@@ -1,0 +1,34 @@
+---
+title: "Group Project - STAT1261"
+author: "Mahima Sindhu"
+date: "11/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+
+library(atus)
+data("atuscps")
+cps <- as_tibble(atuscps) 
+cps
+```
+
+```{r}
+library(ggplot2)
+
+plotcps <- ggplot(data=atuscps) +
+  geom_bar(mapping=aes(x=famincome, fill=home_type)) + 
+  xlab("Family Income") +
+  ylab("Count") 
+
+plotcps + theme(axis.text.x = element_text(size = 3))
+```
+
+
+
