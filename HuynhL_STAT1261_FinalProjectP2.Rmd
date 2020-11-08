@@ -1,0 +1,131 @@
+---
+title: 'STAT 1261: Final Project (Part 2)'
+author: "Linh Huynh"
+date: "11/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(atus)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(ggplot2)
+```
+
+```{r}
+atuscps
+```
+
+### Regional Differences in Mean Income
+I'm having some trouble finding a way to consolidate the data meaningfully, so I'm going to hold off on this part of the data wrangling and visualization for now. I have done a bit of work for it, though.
+
+#### Preparing Data Set
+```{r}
+reg_income <- atuscps %>%
+  select(region, famincome) %>%
+  separate(famincome, into = c("low_famincome", "high_famincome"), sep = "-") %>%
+  mutate(
+    low_famincome = as.integer(low_famincome), 
+    high_famincome = as.integer(high_famincome)
+  ) %>%
+  filter(
+    !low_famincome %in% NA,
+    !high_famincome %in% NA
+  )
+reg_income
+```
+
+#### Finding Original Income Brackets
+```{r}
+levels(atuscps$famincome)
+```
+
+#### Bounds of Family Income
+```{r}
+bounds_reg_income <- reg_income %>%
+  group_by(region) %>%
+  summarise(
+    mean_low_fincome = mean(low_famincome),
+    mean_high_fincome = mean(high_famincome)
+  )
+bounds_reg_income
+```
+
+#### New Income Brackets
+```{r}
+i_brackets <- bounds_reg_income %>%
+  mutate(
+    mean_low_fincome = round(mean_low_fincome),
+    mean_high_fincome = round(mean_high_fincome)
+  ) %>%
+  unite(income_bracket, mean_low_fincome, mean_high_fincome, sep = "-")
+i_brackets
+```
+
+
+#### Mapping
+
+##### Lower Bound of Family Income
+
+##### Higher Bound of Family Income
+
+
+### State Differences in Mean Income
+
+
+
+### Analyzing Race Demographics
+
+#### Racial Breakdown
+```{r}
+num_resp <- nrow(atuscps); num_resp
+```
+
+```{r}
+race <- atuscps %>%
+  select(race) %>%
+  group_by(race) %>%
+  summarise(
+    num_race = n()
+  ) %>%
+  mutate(percent_race = percent((num_race/num_resp))) 
+race
+```
+
+```{r}
+race_plot <- ggplot(data = atuscps, aes(x = factor(1), fill = race)) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y")
+race_plot
+```
+
+#### Citizenship Status Across Races
+```{r}
+citizenship_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
+  geom_bar(position = "fill")
+citizenship_plot
+```
+Note: Go back and reorder ethnicities?
+
+#### Country of Origin Across Races
+```{r}
+country_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
+  geom_bar(position = "fill")
+country_plot
+```
+
+#### Family Income Based on Race
+```{r}
+race_income <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill")
+race_income
+```
+
+
+#### Regional and State Differences in Mean Income for Minorities
+Still need to complete this
