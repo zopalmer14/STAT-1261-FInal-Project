@@ -16,19 +16,36 @@ library(atus)
 library(tidyquant)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ```{r}
 time_data = ungroup(atusact)
-time_data %>% 
-  group_by(tucaseid) %>% 
-  group_by(tiercode, add = TRUE) %>%
+time_data2 = time_data %>% 
+  group_by(tucaseid, tiercode) %>%
   summarise(tier1_2Code = tiercode %/% 100,
             tier1 = tiercode %/% 10000,
             tier2 = (tiercode %% 10000) %/% 100, 
             tier3 = (tiercode %% 10000) %% 100,
-            hours = dur %/% 60,
-            minutes = dur %% 60)
+            dur = dur) %>%
+  inner_join(atuscps) %>% 
+  select(tiercode, tier1, dur, region, state, famincome) %>%
+  drop_na()
+time_data2
+```
+
+```{r}
+time_data2$tier1 = as.factor(time_data2$tier1)
+
+ggplot(data = time_data2, mapping = aes(x = famincome, y = dur, fill = tier1)) + 
+  geom_col(position = "fill") + 
+  coord_flip()
+```
+
+```{r}
+ggplot(data = time_data2, mapping = aes(x = famincome, y = dur, fill = tier1)) + 
+  geom_col(position = "fill") + 
+  coord_polar()
 ```
 
 ```{r}
