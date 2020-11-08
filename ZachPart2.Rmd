@@ -43,12 +43,6 @@ ggplot(data = time_data2, mapping = aes(x = famincome, y = dur, fill = tier1)) +
 ```
 
 ```{r}
-ggplot(data = time_data2, mapping = aes(x = famincome, y = dur, fill = tier1)) + 
-  geom_col(position = "fill") + 
-  coord_polar()
-```
-
-```{r}
 atuscps
 ```
 
