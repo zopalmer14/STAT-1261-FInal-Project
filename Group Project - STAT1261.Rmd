@@ -15,8 +15,7 @@ library(dplyr)
 
 library(atus)
 data("atuscps")
-cps <- as_tibble(atuscps) 
-cps
+as_tibble(atuscps) 
 ```
 
 ```{r}
@@ -28,7 +27,16 @@ plotcps <- ggplot(data=atuscps) +
   ylab("Count") 
 
 plotcps + theme(axis.text.x = element_text(size = 3))
+
 ```
 
+```{r}
+library(atus)
+chart = table(atuscps$famincome, atuscps$home_type)
+chart
 
+chisq.test(chart)
+```
 
+ANALYSIS (Pearson's Chi-Squared Test):
+As the p-value (<2.2e-16) is less than the .05 significance level, and the chi-squared value is notably large, we reject the null hypothesis and conclude that the two variables, family income and home type (own, rent, occupy without rent), are in fact dependent and have a significant relationship. 
