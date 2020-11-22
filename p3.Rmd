@@ -1,0 +1,144 @@
+---
+title: "finalpt3"
+output: pdf_document
+---
+
+```{r}
+library(atus)
+library(dplyr)
+library(rpart)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+Here, we investigated the relationship between various demographic variables and income. 
+
+# Exploratory analysis
+```{r}
+# Find average family income by educational attainment
+avg_income_by_edu <- atuscps 
+avg_income_by_edu <- avg_income_by_edu %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(education=edu) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_edu
+```
+```{r}
+#Visualize results
+ggplot(data=avg_income_by_edu, aes(x=education, y=avg_income)) +
+  geom_bar(stat='identity',  fill = brewer.pal(n=8,name = "Set1")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+Here we find the expected result of an aparent trend in income as educational attainment increases. 
+
+```{r}
+# Investigate by region
+# Find average family income by educational attainment
+avg_income_by_edu_region <- atuscps 
+avg_income_by_edu_region <-avg_income_by_edu_region %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(region,edu) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_edu_region
+```
+
+```{r}
+# Compare regions by income
+region_df <- avg_income_by_edu_region %>%
+  group_by(region) %>%
+  summarise(N=n(),
+            avg_income = mean(avg_income)) %>%
+  arrange(avg_income)
+ggplot(region_df, aes(x=region, y=avg_income, label=avg_income)) +
+  geom_bar(stat='identity', fill = brewer.pal(n=4,name = "BuPu")) +
+  geom_text(aes(label = signif(avg_income, digits = 3)), nudge_y = -2000, color='DarkBlue') + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Here the results are less clear, although it would appear that the south has relatively low average income. 
+
+```{r}
+# Compare income by region and edu
+ggplot(avg_income_by_edu_region, aes(x=region, y=avg_income)) +
+    geom_col(position='stack',stat='identity') +
+    scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -10000, color = 'white') +
+    facet_grid(~ edu) 
+```
+Here we see specific education levels may play a mitigating role in the observed disparity by region. 
+
+```{r}
+avg_income_by_race <- atuscps 
+avg_income_by_race <-avg_income_by_race %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race,region) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race
+```
+
+```{r}
+ggplot(avg_income_by_race, aes(x=region, y=avg_income)) +
+    geom_col(position='stack',stat='identity') +
+    scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -5500, color = 'white') +
+    facet_grid(~ race) 
+
+```
+```{r}
+avg_income_by_race_edu <- atuscps 
+avg_income_by_race_edu <-avg_income_by_race_edu %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race,edu) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race_edu
+```
+```{r}
+ggplot(avg_income_by_race_edu, aes(x=edu, y=avg_income)) +
+    geom_col(position='stack',stat='identity') +
+    scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -5500, color = 'white') +
+    facet_grid(~ race) 
+
+```
+
+
+```{r}
+# Put to the test
+atuscps_mid_income <- atuscps 
+atuscps_mid_income <- atuscps_mid_income %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2)
+test_stats <- lm(fam_income_mid ~ edu + region + race, data=atuscps_mid_income)
+
+summary(test_stats)
+```
