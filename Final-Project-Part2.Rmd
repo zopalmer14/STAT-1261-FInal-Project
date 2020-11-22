@@ -22,6 +22,8 @@ library(ggplot2)
 library(RColorBrewer)
 ```
 
+## Zach Palmer
+
 #### Data Manipulation
 
 ```{r}
