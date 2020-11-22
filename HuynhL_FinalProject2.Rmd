@@ -1,0 +1,170 @@
+---
+title: "Final Project (Pt.2)"
+author: "Linh Huynh"
+date: "11/22/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(atus)
+library(tidyr)
+library(dplyr)
+library(scales)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+# Race, Citizenship, and Country of Origin Background Info
+
+## Racial Composition of U.S.
+```{r}
+race_color <- brewer.pal(4, "Set1"); race_color
+race_plot <- ggplot(data = atuscps, aes(x = factor(1), fill = race)) +
+  geom_bar(width = 1) +
+  coord_polar(theta = "y")
+race_plot
+```
+
+## Citizenship Status Across Race
+```{r}
+citizenship_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
+  geom_bar(position = "fill")
+citizenship_plot
+```
+
+By Region:
+```{r}
+citizenship_plot2 <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ region)
+citizenship_plot2
+```
+
+By State:
+```{r}
+citizenship_plot3 <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ state) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+citizenship_plot3
+# This one seems too crowded to be an effective visualization
+```
+
+```{r}
+citizen1 <- atuscps %>% 
+  dplyr::select(tucaseid, region, state, race, citizen) %>%
+  filter(citizen == "yes") %>%
+  group_by(race, region) %>%
+  summarize(
+    is_citizen = n()
+  )
+citizen1
+```
+
+```{r}
+citizen2 <- atuscps %>% 
+  dplyr::select(tucaseid, region, state, race, citizen) %>%
+  filter(citizen == "no") %>%
+  group_by(race, region) %>%
+  summarize(
+    not_citizen = n()
+  )
+citizen2
+```
+
+```{r}
+citizen3 <- citizen1 %>%
+  left_join(citizen2, by = c("race", "region")) %>%
+  mutate(citizen_ratio = is_citizen/(is_citizen + not_citizen))
+citizen3
+# Not sure how to proceed
+```
+
+## Country of Origin Across Races
+```{r}
+country_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
+  geom_bar(position = "fill")
+country_plot
+```
+
+By Region:
+```{r}
+country_plot2 <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ region)
+country_plot2
+```
+
+By State:
+```{r}
+country_plot3 <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ state) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+country_plot3
+# Too crowded again
+```
+
+# Income Brackets
+## Race
+```{r}
+race_income <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+race_income
+```
+
+Regional Differences
+```{r}
+race_income_reg <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ region)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+race_income_reg
+```
+
+State Differences
+```{r}
+race_income_state <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ state) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+race_income_state
+# Too crowded
+```
+
+## Citizenship
+```{r}
+racecitizen_income <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~ citizen)
+racecitizen_income
+```
+
+Regional
+```{r}
+racecitizen_income2 <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(citizen ~ region)
+racecitizen_income2
+```
+
+State (Can't visualize effectively)
+```{r}
+# racecitizen_income3 <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_grid(citizen ~ state)
+# racecitizen_income3
+# Cannot be visualized effectively
+```
+
+# Median Household Income
+
+# Income Disparities (Top 1% vs. Bottom 99%)
