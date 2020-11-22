@@ -1,0 +1,134 @@
+---
+title: "Final Project Part 2"
+author: "Zach Palmer"
+date: "11/22/2020"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+#### Code Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.width = 9, fig.height = 5.5, out.width = "90%", fig.align = "center", cache = T) 
+```
+
+```{r, warning=FALSE, include=FALSE}
+library(atus)
+library(tidyquant)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+#### Data Manipulation
+
+```{r}
+time_data = ungroup(atusact)
+head(time_data, 5)
+```
+
+```{r}
+time_data2 = time_data %>% 
+  group_by(tiercode) %>%
+  summarise(tucaseid = tucaseid,
+            tier1_2Code = tiercode %/% 100,
+            tier1 = tiercode %/% 10000,
+            tier2 = (tiercode %% 10000) %/% 100, 
+            tier3 = (tiercode %% 10000) %% 100,
+            dur = dur) %>%
+  inner_join(atuscps) %>% 
+  select(tiercode, tier1, dur, region, state, famincome, edu) %>%
+  drop_na()
+time_data2
+```
+
+```{r}
+time_data3 = time_data2 %>%
+  group_by(tier1) %>%
+  mutate(TDur = sum(dur)) 
+time_data3
+```
+
+```{r}
+time_data4 = time_data2 %>%
+  group_by(region) %>%
+  mutate(RDur = sum(dur)) 
+time_data4
+```
+
+```{r}
+time_data5 = time_data2 %>%
+  group_by(edu) %>%
+  mutate(EDur = sum(dur)) 
+time_data5
+```
+
+#### Generating Graphics
+
+```{r}
+time_data3$tier1 = as.factor(time_data3$tier1)
+colourCount = length(unique(time_data3$tier1))
+colourCount
+```
+
+```{r}
+time_data3$tier1 = as.factor(time_data3$tier1)
+colourCount = length(time_data3$tier1)
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+
+income_plot = ggplot(data = time_data3, mapping = aes(x = famincome, y = TDur, fill = tier1)) +
+  labs(title = "The Impact of Income on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Family Income") +
+  scale_fill_brewer(palette = "Set1") +
+  geom_col(position = "fill") + 
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  theme_bw()  +
+  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) 
+
+income_plot + 
+  coord_flip()
+```
+
+```{r}
+time_data4$tier1 = as.factor(time_data4$tier1)
+
+ggplot(data = time_data4, mapping = aes(x = region, y = RDur, fill = tier1)) +
+  labs(title = "The Impact of Region on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Region") +
+  geom_col(position = "fill") + 
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  theme_bw()  +
+  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) +
+  coord_flip()
+```
+
+```{r}
+time_data5$tier1 = as.factor(time_data5$tier1)
+
+ggplot(data = time_data5, mapping = aes(x = edu, y = EDur, fill = tier1)) +
+  labs(title = "The Impact of Educational Attainment on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Educational Attainment") +
+  geom_col(position = "fill") + 
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  theme_bw()  +
+  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) +
+  coord_flip()
+```
+
+#```{r}
+#income_plot +
+#  facet_wrap(~ edu, ncol = 8)
+#```
+
+```{r}
+income_plot +
+  facet_wrap(~ region, ncol = 4)
+```
+
+#### Analyzing Relationship Strength/Correlation
+
+```{r}
+mod1 = lm(TDur ~ famincome, data = time_data3)
+mod2 = lm(RDur ~ region, data = time_data4)
+mod3 = lm(EDur ~ edu, data = time_data5)
+```
+
