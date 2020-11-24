@@ -18,153 +18,332 @@ library(ggplot2)
 library(RColorBrewer)
 ```
 
-# Race, Citizenship, and Country of Origin Background Info
+# Race and Income 
 
-## Racial Composition of U.S.
+##Background Visualizations
+
+### Racial Composition of U.S.
+  The following bar graph represents the numbers of people of each race in the U.S. population. This provides a frame of reference for the U.S. population composition when viewing later data visualizations.
+
+*National Visualization*
 ```{r}
-race_color <- brewer.pal(4, "Set1"); race_color
-race_plot <- ggplot(data = atuscps, aes(x = factor(1), fill = race)) +
-  geom_bar(width = 1) +
-  coord_polar(theta = "y")
+race_plot <- ggplot(data = atuscps, aes(x = race, fill = race)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Racial Composition of the U.S.", x = NULL, y = NULL, fill = "Race") +
+  labs(title = "Regional Racial Compositions in the U.S.", x = "Race", y = "Count") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+    ) 
 race_plot
 ```
 
-## Citizenship Status Across Race
+*Regional Visualization*
+  The regional racial distributions seem to be similar to the national one. From this visualization, it can be concluded that the most populated region of the U.S. is the South and the least is the Northeast.
+  
+```{r}
+race_plot2 <- ggplot(data = atuscps, aes(x = race, fill = race)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Racial Composition of the U.S.", x = NULL, y = NULL, fill = "Race") +
+  labs(title = "Regional Racial Compositions in the U.S.", x = "Race", y = "Count") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+    ) +
+  facet_wrap(~ region)
+race_plot2
+```
+
+### Subcategories of Race
+  Other demographic variables, such as citizenship status and country of origin, are relevant to race and may act as subcategories of race.
+
+#### Citizenship Status Across Race
+*National Visualization*
+  Surprisingly, there seems to be a greater percentage of black people who hold citizenship than that of white people. This may be due to greater immigration from European countries. It is clear that Asians are most likely to not hold citizenship status among the racial categories studided.
 ```{r}
 citizenship_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
-  geom_bar(position = "fill")
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "U.S. Citizenship Status Across Races", x = "Race", y = "Count", fill = "U.S. Citizen") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 citizenship_plot
 ```
 
-By Region:
+*Regional Visualization*
+  Aside from Asians, every other racial group consistently has at least 87.5% citizenship in each region. In the west, a greater proportion of Asians are citizens compared to those of the three other regions.
+  
 ```{r}
 citizenship_plot2 <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
   geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "U.S. Citizenship Status Across Races by Region", x = "Race", y = "Count", fill = "U.S. Citizen") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
   facet_wrap(~ region)
 citizenship_plot2
 ```
 
-By State:
-```{r}
-citizenship_plot3 <- ggplot(data = atuscps, mapping = aes(x = race, fill = citizen)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ state) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-citizenship_plot3
-# This one seems too crowded to be an effective visualization
-```
+#### Country of Origin
+  In the `atuscps` dataset, the variable listing each respondent's country of origin is binary; repsondents were asked whether or not their country of origin is the U.S. Both the national and regional visualizations for this variable seem to correspond strongly with the U.S. citizenship status visualizations in the previous section.
 
-```{r}
-citizen1 <- atuscps %>% 
-  dplyr::select(tucaseid, region, state, race, citizen) %>%
-  filter(citizen == "yes") %>%
-  group_by(race, region) %>%
-  summarize(
-    is_citizen = n()
-  )
-citizen1
-```
-
-```{r}
-citizen2 <- atuscps %>% 
-  dplyr::select(tucaseid, region, state, race, citizen) %>%
-  filter(citizen == "no") %>%
-  group_by(race, region) %>%
-  summarize(
-    not_citizen = n()
-  )
-citizen2
-```
-
-```{r}
-citizen3 <- citizen1 %>%
-  left_join(citizen2, by = c("race", "region")) %>%
-  mutate(citizen_ratio = is_citizen/(is_citizen + not_citizen))
-citizen3
-# Not sure how to proceed
-```
-
-## Country of Origin Across Races
+*National Visualization*
 ```{r}
 country_plot <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
-  geom_bar(position = "fill")
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Countries of Origin Across Races", x = "Race", y = "Count", fill = "Country of Origin") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 country_plot
 ```
 
-By Region:
+*Regional Visualization*
 ```{r}
 country_plot2 <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
   geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Countries of Origin Across Races by Region", x = "Race", y = "Count", fill = "Country of Origin") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
   facet_wrap(~ region)
 country_plot2
 ```
 
-By State:
+### Race vs. Income
+  To visualize the possible relationship between race and income, three representations of income were used : family income brackets, average family income, and the ratio of the top 1% to the bottom 99%. 
+
+  Observations with missing values have been removed from this dataset to better visualize the income graphs
 ```{r}
-country_plot3 <- ggplot(data = atuscps, mapping = aes(x = race, fill = country_born)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ state) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-country_plot3
-# Too crowded again
+income <- atuscps %>% 
+  na.omit()
+income
 ```
 
-# Income Brackets
-## Race
+#### Family Income Brackets
+
+*Race*
+  As expected, whites and Asians are increasingly larger proportions of income brackets as they ascend. Conversely, blacks and other racial groups are decreasingly smaller proportions of income brackets as they ascend. This income disparity could be attributed to economic and social inequality.
+  
 ```{r}
-race_income <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+fam_income <- ggplot(data = income, mapping = aes(x = famincome, fill = race)) +
   geom_bar(position = "fill") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Racial Breakdown of Each Income Bracket in the U.S.", x = "Family Income Bracket", y = "Count", fill = "Race") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 race_income
 ```
 
-Regional Differences
+*Regional Differences in Income*
+  To determine whether the regional income distributions differed from those of the national visualization, the `facet_wrap()` function was used. Again, the regional trends are similar to those of the national one.
+  
 ```{r}
-race_income_reg <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+fam_income2 <- ggplot(data = income, mapping = aes(x = famincome, fill = race)) +
   geom_bar(position = "fill") +
-  facet_wrap(~ region)+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-race_income_reg
-```
-
-State Differences
-```{r}
-race_income_state <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ state) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-race_income_state
-# Too crowded
-```
-
-## Citizenship
-```{r}
-racecitizen_income <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
-  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Racial Breakdown of Each Income Bracket in the U.S. by Region", x = "Family Income Bracket", y = "Count", fill = "Race") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~ region)
+race_income2
+```
+
+*U.S. Citizenship*
+  While the proportion of non-citizen blacks in each income bracket remains fairly consistent, the proportion of blacks with U.S. citizenship decreases as the income brackets increase. For whites, the proportion of people decreases for non-citizens and increases for citizens as the income brackets increase. The other racial groups seem to maintain the same distributions regardless of citizenship status. Although this requires further statistical analysis, these results may indicate that citizenship is a significant variable in predicting income.
+  
+```{r}
+fam_income3 <- ggplot(data = income, mapping = aes(x = famincome, fill = race)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Racial Breakdown of Each Income Bracket in the U.S. by Citizenship", x = "Family Income Bracket", y = "Count", fill = "Race") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
   facet_wrap(~ citizen)
-racecitizen_income
+race_income3
 ```
 
-Regional
+*Country of Origin*
+  The proportion of whites born outside of the U.S. decreases as the income bracket increases, which corresponds to the trend seen for non-citizen whites in the citizenship visualization. The proportion of blacks born outside of the U.S. remains fairly consistent across each income bracket, which again reflects the citizenship distribution. Distributions for the two other racial groups are similar to those of the national ones.
+  
 ```{r}
-racecitizen_income2 <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
+fam_income4 <- ggplot(data = income, mapping = aes(x = famincome, fill = race)) +
   geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Set1") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_grid(citizen ~ region)
-racecitizen_income2
+  labs(title = "Racial Breakdown of Each Income Bracket in the U.S. by Country of Origin", x = "Family Income Bracket", y = "Count", fill = "Race") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~ country_born)
+race_income4
 ```
 
-State (Can't visualize effectively)
+#### Average Family Income
+  The dataset below calculates the average family income for each race within each region.
 ```{r}
-# racecitizen_income3 <- ggplot(data = atuscps, mapping = aes(x = famincome, fill = race)) +
-  geom_bar(position = "fill") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_grid(citizen ~ state)
-# racecitizen_income3
-# Cannot be visualized effectively
+avg_income_by_race <- atuscps 
+avg_income_by_race <-avg_income_by_race %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race
 ```
 
-# Median Household Income
+*Race*
+  Surprisingly, Asians have the highest average family income, followed by whites, other, then blacks. 
+```{r}
+avg_income_plot <- ggplot(data = avg_income_by_race, mapping = aes(x = race, y = avg_income)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Average U.S. Family Income by Race", x = "Race", y = "Average Family Income") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) 
+avg_income_plot
+```
 
-# Income Disparities (Top 1% vs. Bottom 99%)
+*Regional Differences in Income*
+  The average family income maintains the same distribution for each region as the general racial one in the previous visualization.
+```{r}
+avg_income_by_race2 <- atuscps %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race, region) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race2
+```
+
+```{r}
+avg_income_plot2 <- ggplot(data = avg_income_by_race2, mapping = aes(x = race, y = avg_income)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Regional Average U.S. Family Income by Race", x = "Race", y = "Average Family Income") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~ region) +
+  geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -15000, color = 'white')
+avg_income_plot2
+```
+
+*U.S. Citizenship*
+   For U.S. citizens, the distribution was the same as the ones for the previous two visualizations. Surprisingly, average family income was about $40,000 for all non-citizens except for Asians. Asian non-citizens had a considerably higher average family income than these other racial groups. 
+```{r}
+avg_income_by_race3 <- atuscps %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race, citizen) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race3
+```
+
+  
+```{r}
+avg_income_plot3 <- ggplot(data = avg_income_by_race3, mapping = aes(x = race, y = avg_income)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Average U.S. Family Income by Citizenship Status Across Race", x = "Race", y = "Average Family Income") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~ citizen) +
+  geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -15000, color = 'white')
+avg_income_plot3
+```
+
+*Country of Origin*
+  The country of origin trend mirrors that of the one for citizenship. This makes sense, as respondents who reported that they were born outside of the U.S. most likely do not hold U.S. citizenship.
+```{r}
+avg_income_by_race4 <- atuscps %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) %>%
+  group_by(race, country_born) %>%
+  summarise(N = n(),
+            avg_income = mean(fam_income_mid)) %>%
+  arrange(avg_income)
+avg_income_by_race4
+```
+
+  
+```{r}
+avg_income_plot4 <- ggplot(data = avg_income_by_race4, mapping = aes(x = race, y = avg_income)) +
+  geom_col() +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Average U.S. Family Income by Citizenship Status Across Race", x = "Race", y = "Average Family Income") +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~ country_born) +
+  geom_text(aes(label = signif(avg_income, digits = 3)), angle = 90, 
+              nudge_y = -15000, color = 'white')
+avg_income_plot4
+```
+
+# Statistical Analysis
+  First, simple linear regresions were conducted to analyze the individual demographic varaibles from the study. Then, they were combined to form a multiple regression to create a more complex and realistic relationship to income.
+
+```{r}
+income2 <- atuscps %>%
+  separate(famincome, into=c('income_low','income_high'), sep='-',convert=TRUE)%>%
+  mutate(income_low = as.integer(income_low)) %>%
+  drop_na() %>%
+  mutate(fam_income_mid = (income_high+income_low)/2) 
+income2
+```
+
+```{r}
+mod1 <- lm(fam_income_mid ~ race, data = income2)
+summary(mod1)
+```
+
+```{r}
+mod2 <- lm(fam_income_mid ~ citizen, data = income2)
+summary(mod2)
+```
+
+```{r}
+mod3 <- lm(fam_income_mid ~ country_born, data = income2)
+summary(mod3)
+```
+
+  To represent the more complex relationships between all of these demographic variables and income, I used multiple regression 
+```{r}
+mod4 <- lm(fam_income_mid ~ race + citizen + country_born,  data = income2)
+summary(mod4)
+```
+
+# Conclusion
+  Based on the results of the linear regressions conducted, all of the demographic variables studied are significant due to their small p-values (<2e-16). Unfortunately, this means that the impacts and importance of each variable cannot be distinguished since they returned the same p-values and are all concluded to be significant. In conclusion, race, citizenship, and country of origin are all significant predictors of family income.
+  
