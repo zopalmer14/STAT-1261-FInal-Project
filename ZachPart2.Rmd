@@ -1,33 +1,40 @@
 ---
-title: "Final Project Part 2"
-author: "Zach Palmer"
-date: "11/12/2020"
+title: "Final Project"
+author: "Group 11"
+date: "11/22/2020"
 output:
   html_document:
     df_print: paged
   word_document: default
+  pdf_document: default
 ---
-#### Code Setup
+## Code Setup
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.width = 9, fig.height = 5.5, out.width = "90%", fig.align = "center", cache = T) 
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.width = 9, fig.height = 5.5, 
+                      out.width = "90%", fig.align = "center", cache = T) 
 ```
 
-```{r, warning=FALSE, include=FALSE}
+```{r, warning = FALSE, message = FALSE}
 library(atus)
 library(tidyquant)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(RColorBrewer)
+library(broom)
 ```
 
-#### Data Manipulation
+## Data Manipulation
+
+The ATUS data is grouped into three separate datasets--atusact, atuscps, and atusresp--that contain information on peoples' time usage, demographics, and personal information respectively. We will begin by bringing in the atusact dataset and ungrouping it so that we can start manipulating it as we wish.
 
 ```{r}
 time_data = ungroup(atusact)
-head(time_data, 5)
+glimpse(time_data)
 ```
+
+In its original state, atusact contains tiercodes with three, two digit pairs. In this combined format the tiercodes provide very detailed information into the exact activities the individual is performing for whatever length of time; however, what we really want to examine is the overall time various people spend on certain categories of tasks that encompass a broad range of related activities. Therefore, what we need to do is isolate the two digit pairings in the tiercodes to gain a better view of this. As you can see, this simply requires some arithmetic to separate out the various tiers.  
 
 ```{r}
 time_data2 = time_data %>% 
@@ -44,91 +51,181 @@ time_data2 = time_data %>%
 time_data2
 ```
 
+Additionally, as shown above, we want to join the atusact dataset with atuscps so that we can begin analyzing the relationships between peoples' time usage and various demographics.
+
+#### Family Income  
+&nbsp;
+
+First, we will look into the impact of family income on time usage.
+
 ```{r}
 time_data3 = time_data2 %>%
-  group_by(tier1) %>%
-  mutate(TDur = sum(dur)) 
+  group_by(tier1, famincome) %>%
+  mutate(TDur = sum(dur)) %>% 
+  select(famincome, tier1, TDur) %>% 
+  distinct() %>% 
+  arrange(tier1, TDur)
 time_data3
 ```
 
+#### Geographic Region  
+&nbsp;
+
+Next, we will examine the impact of region on time usage
+
 ```{r}
 time_data4 = time_data2 %>%
-  group_by(region) %>%
-  mutate(RDur = sum(dur)) 
+  group_by(tier1, region) %>%
+  mutate(RDur = sum(dur)) %>% 
+  select(region, tier1, RDur) %>% 
+  distinct() %>% 
+  arrange(tier1, RDur)
 time_data4
 ```
 
+#### Educational Attainment  
+&nbsp;
+
+And finally, we will look into the impact of educational attainment on time usage
+
 ```{r}
 time_data5 = time_data2 %>%
-  group_by(edu) %>%
-  mutate(EDur = sum(dur)) 
+  group_by(tier1, edu) %>%
+  mutate(EDur = sum(dur)) %>% 
+  select(edu, tier1, EDur) %>% 
+  distinct() %>% 
+  arrange(tier1, EDur)
 time_data5
 ```
 
-#### Generating Graphics
+## Generating Graphics
+
+For each of our demographic variables (famincome, region, and edu) we will create a stacked bar graph that displays the percentage of the time that each subgroup of the demographic spends on certain types of activities (i.e. Personal Care)
 
 ```{r}
 time_data3$tier1 = as.factor(time_data3$tier1)
 colourCount = length(unique(time_data3$tier1))
-colourCount
-```
+getPalette = colorRampPalette(brewer.pal(12, "Paired"))
 
-```{r}
-time_data3$tier1 = as.factor(time_data3$tier1)
-colourCount = length(time_data3$tier1)
-getPalette = colorRampPalette(brewer.pal(9, "Set1"))
-
-income_plot = ggplot(data = time_data3, mapping = aes(x = famincome, y = TDur, fill = tier1)) +
-  labs(title = "The Impact of Income on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Family Income") +
+ggplot(data = time_data3, mapping = aes(x = famincome, y = TDur, 
+                                                      fill = tier1)) +
+  labs(title = "The Impact of Income on Time Usage Distribution", 
+       subtitle = "Data from the 2003-2016 American Time Usage Survey", 
+       y = "Time Usage (% of Total)", x = "Family Income") +
   scale_fill_brewer(palette = "Set1") +
   geom_col(position = "fill") + 
-  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){
+    paste0(x * 100, '%')}) +
   theme_bw()  +
-  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) 
-
-income_plot + 
-  coord_flip()
+  scale_fill_manual(name = "Category", labels = c("Personal Care", "Household",
+                    "Caring for HH Members", "Caring for NonHH Members", "Work",
+                    "Education", "Shopping", "Professional Serv", 
+                    "Household Serv", "Gov Serv & Civic Obligations", 
+                    "Eating & Drinking", "Socializing & Leisure", 
+                    "Exercise & Recreation", "Religious & Spiritual",
+                    "Volunteering", "Telephone Calls", "Traveling"), 
+                    values = getPalette(colourCount)) + 
+  coord_flip() 
 ```
+Upon cursory inspection, it appears that as family income increases, people tend to spend less time on Personal Care (includes sleeping) and Socializing & Leisure related activities, while spending more time Traveling, on Exercise & Recreation, and on Work related activities.
 
 ```{r}
 time_data4$tier1 = as.factor(time_data4$tier1)
-
 ggplot(data = time_data4, mapping = aes(x = region, y = RDur, fill = tier1)) +
-  labs(title = "The Impact of Region on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Region") +
-  geom_col(position = "fill") + 
-  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  labs(title = "The Impact of Region on Time Usage Distribution", 
+       subtitle = "Data from the 2003-2016 American Time Usage Survey", 
+       y = "Time Usage (% of Total)", x = "Region") +
+  geom_col(position = "fill") +
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){
+    paste0(x * 100, '%')}) +
   theme_bw()  +
-  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) +
+  scale_fill_manual(name = "Category", labels = c("Personal Care", "Household",
+                    "Caring for HH Members", "Caring for NonHH Members", "Work",
+                    "Education", "Shopping", "Professional Serv",
+                    "Household Serv", "Gov Serv & Civic Obligations",
+                    "Eating & Drinking", "Socializing & Leisure",
+                    "Exercise & Recreation", "Religious & Spiritual",
+                    "Volunteering", "Telephone Calls", "Traveling"),
+                    values = getPalette(colourCount)) +
   coord_flip()
 ```
+Looking at the resulting bar graph, it appears that region has little impact on time usage as the percentages of time spend on different types of activities across various regions of the United States line up almost perfectly. Although there are some slight deviations, for the most part it seems that region does not influence time usage significantly. 
 
 ```{r}
 time_data5$tier1 = as.factor(time_data5$tier1)
-
 ggplot(data = time_data5, mapping = aes(x = edu, y = EDur, fill = tier1)) +
-  labs(title = "The Impact of Educational Attainment on Time Usage Distribution", subtitle = "Data from the 2003-2016 American Time Usage Survey", y = "Time Usage (% of Total)", x = "Educational Attainment") +
+  labs(title = "The Impact of Educational Attainment on Time Usage Distribution",
+       subtitle = "Data from the 2003-2016 American Time Usage Survey", 
+       y = "Time Usage (% of Total)", x = "Educational Attainment") +
   geom_col(position = "fill") + 
-  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){paste0(x * 100, '%')}) +
+  scale_y_continuous(breaks = seq(0.0, 1.0, 0.1), labels = function(x){
+    paste0(x * 100, '%')}) +
   theme_bw()  +
-  scale_fill_discrete(name = "Category", labels = c("Personal Care", "Household", "Caring for HH Members", "Caring for NonHH Members", "Work", "Education", "Shopping", "Professional Serv", "Household Serv", "Gov Serv & Civic Obligations", "Eating & Drinking", "Socializing & Leisure", "Exercise & Recreation", "Religious & Spiritual", "Volunteering", "Telephone Calls", "Traveling")) +
+  scale_fill_manual(name = "Category", labels = c("Personal Care", "Household",
+                    "Caring for HH Members", "Caring for NonHH Members", "Work",
+                    "Education", "Shopping", "Professional Serv",
+                    "Household Serv", "Gov Serv & Civic Obligations",
+                    "Eating & Drinking", "Socializing & Leisure",
+                    "Exercise & Recreation", "Religious & Spiritual", 
+                    "Volunteering", "Telephone Calls", "Traveling"), 
+                    values = getPalette(colourCount)) +
   coord_flip()
 ```
+As one might expect, the trends in the resulting bar graph seem to reflect those that appear in the graph for family income. It is well known that there is a strong correlation between these two variables so this is not that surprising. Most notable among the differences in the visual is that it appears that as educational attainment increases, people spend more time on Work and less time on Socializing & Leisure as well as on Personal Care. We saw these same exact trends in the graph for family income if you recall the result of the earlier code chunk.
 
-#```{r}
-#income_plot +
-#  facet_wrap(~ edu, ncol = 8)
-#```
+## Analyzing Relationship Strength/Correlation
+
+Now, we will fit and test various models on the datasets we have created to determine whether these demographics truly have a significant impact on the time usage of people in the ATUS. We will try a number of models and examine the results.
+
+#### Linear Regression
+&nbsp;
+
+We will start out by conducting some basic tests for linear regression.
 
 ```{r}
-income_plot +
-  facet_wrap(~ region, ncol = 4)
+mod1 = lm(TDur ~ famincome, data = time_data3) 
+summary(mod1)
 ```
-
-#### Analyzing Relationship Strength/Correlation
+Somewhat unexpectedly based on our observations of the bar graph, it appears that family income is not as influential as we thought on peoples' time usage. While the higher income brackets do show relatively low p-values, the only factor level that produces a p-value less than .05 is 'famincome75000-99999'.
 
 ```{r}
-mod1 = lm(TDur ~ famincome, data = time_data3)
 mod2 = lm(RDur ~ region, data = time_data4)
+summary(mod2)
+```
+As we expected from the graph we generated, region has little impact on time usage. None of the p-values for the regions are below .05.
+
+```{r}
 mod3 = lm(EDur ~ edu, data = time_data5)
+summary(mod3)
+```
+Again, somewhat surprising results based on the appearance of our graph. The p-values for the various educational attainments are even worse than those for family income and none possess a value below .05.
+
+#### Multi-variable Linear Regression
+&nbsp;
+
+Lets try grouping the dataset observations by tier, famincome, region, and edu to see if we find anything different. 
+
+```{r}
+time_data6 = time_data2 %>% 
+  group_by(tier1, famincome, region, edu) %>% 
+  mutate(Dur = sum(dur)) %>% 
+  select(tier1, famincome, region, edu, Dur) %>%
+  distinct()
+time_data6
 ```
 
+```{r}
+mod4 = lm(Dur ~ famincome + region + edu, data = time_data6)
+summary(mod4)
+```
+The results of this tests are still rather confusing as the p-values don't line up with the results from earlier tests. The results show both educational attainment and region as having significant impact on time usage despite the results of the earlier tests. Based on this test the most significant predictors are certain levels of each factor. These levels include edudoctoral degree, eduprof degree, regionsouth, and famincome 75000-99999.
+
+## Conclusion
+
+Overall, based on the results of the tests and the graphics generated, I think that it is difficult to reach a decisive decision on the impact of the demographic variables Family Income, Region, and Educational Attainment on Time Usage. However, I would say that it seems these three variables do not have that significant of an impact on Time Usage. If I were to rank the impact of the variables it would likely go Family Income, Educational Attainment, and then finally Region.
+
+## My Contributions
+
+I did the data manipulation, generated graphics, and ran statistical tests on the relationships between Time Usage and the demographics of Family Income, Region, and Educational Attainment
+
+Note: I used the bad_drivers dataset for part 1 of the final project

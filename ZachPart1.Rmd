@@ -1,9 +1,11 @@
 ---
 title: 'STAT 1261/2260: Principles of Data Science'
-subtitle: 'Final Project'
 author: "Zach Palmer"
 date: "10/21/2020"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
+subtitle: Final Project
 ---
 
 ```{r setup, include=FALSE}
